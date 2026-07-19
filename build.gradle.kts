@@ -23,6 +23,7 @@ dependencies {
     compileOnly("io.netty:netty-codec:$nettyVersion")
     compileOnly("io.netty:netty-transport:$nettyVersion")
     compileOnly("io.netty:netty-transport-classes-epoll:$nettyVersion")
+    compileOnly("io.netty:netty-transport-classes-kqueue:$nettyVersion")
     compileOnly("org.cloudburstmc.protocol:bedrock-codec:$protocolVersion")
     compileOnly("org.cloudburstmc.protocol:bedrock-connection:$protocolVersion")
     compileOnly("com.github.luben:zstd-jni:1.5.5-4")

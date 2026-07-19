@@ -11,12 +11,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.ServerChannel;
-import io.netty.channel.epoll.Epoll;
-import io.netty.channel.epoll.EpollEventLoopGroup;
-import io.netty.channel.epoll.EpollServerSocketChannel;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
 
 import java.net.InetSocketAddress;
@@ -40,22 +34,13 @@ public final class TcpProxyTransportServer {
      * not abort startup on a bind failure can swallow it.
      */
     public CompletableFuture<Void> bind(InetSocketAddress bindAddress, ChannelInitializer<Channel> childHandler) {
-        boolean epoll = Epoll.isAvailable();
-        this.bossGroup = epoll
-            ? new EpollEventLoopGroup(1, new DefaultThreadFactory("ProxyTransport-TCP-Boss"))
-            : new NioEventLoopGroup(1, new DefaultThreadFactory("ProxyTransport-TCP-Boss"));
-        this.workerGroup = epoll
-            ? new EpollEventLoopGroup(new DefaultThreadFactory("ProxyTransport-TCP-Worker"))
-            : new NioEventLoopGroup(new DefaultThreadFactory("ProxyTransport-TCP-Worker"));
-
-        Class<? extends ServerChannel> channelClass = epoll
-            ? EpollServerSocketChannel.class
-            : NioServerSocketChannel.class;
+        this.bossGroup = TransportEventLoops.newGroup(1, new DefaultThreadFactory("ProxyTransport-TCP-Boss"));
+        this.workerGroup = TransportEventLoops.newGroup(0, new DefaultThreadFactory("ProxyTransport-TCP-Worker"));
 
         CompletableFuture<Void> result = new CompletableFuture<>();
         new ServerBootstrap()
             .group(this.bossGroup, this.workerGroup)
-            .channel(channelClass)
+            .channel(TransportEventLoops.serverSocketChannel())
             .childOption(ChannelOption.TCP_NODELAY, true)
             .childHandler(childHandler)
             .bind(bindAddress)

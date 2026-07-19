@@ -11,11 +11,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.epoll.Epoll;
-import io.netty.channel.epoll.EpollDatagramChannel;
-import io.netty.channel.epoll.EpollEventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.handler.codec.quic.InsecureQuicTokenHandler;
 import io.netty.handler.codec.quic.QuicServerCodecBuilder;
 import io.netty.handler.codec.quic.QuicSslContext;
@@ -69,10 +64,7 @@ public final class QuicProxyTransportServer {
             return result;
         }
 
-        boolean epoll = Epoll.isAvailable();
-        this.group = epoll
-            ? new EpollEventLoopGroup(new DefaultThreadFactory("ProxyTransport-QUIC"))
-            : new NioEventLoopGroup(new DefaultThreadFactory("ProxyTransport-QUIC"));
+        this.group = TransportEventLoops.newGroup(0, new DefaultThreadFactory("ProxyTransport-QUIC"));
 
         ChannelHandler codec = new QuicServerCodecBuilder()
             .sslContext(sslContext)
@@ -94,7 +86,7 @@ public final class QuicProxyTransportServer {
 
         new Bootstrap()
             .group(this.group)
-            .channel(epoll ? EpollDatagramChannel.class : NioDatagramChannel.class)
+            .channel(TransportEventLoops.datagramChannel())
             .handler(codec)
             .bind(bindAddress)
             .addListener((ChannelFuture future) -> {
