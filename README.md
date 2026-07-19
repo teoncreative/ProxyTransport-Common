@@ -1,22 +1,39 @@
-# ProxyTransport-Common
+# ProxyTransport
 
-Host-agnostic downstream implementation of the [ProxyTransport](https://github.com/teoncreative/ProxyTransport)
-protocol, built on CloudburstMC/Protocol.
+ProxyTransport is a TCP & QUIC transport protocol implementation to replace the inefficient RakNet protocol implementation
+between proxies and downstream servers.
 
-ProxyTransport replaces RakNet between a WaterdogPE proxy and its downstream servers with raw TCP (and QUIC).
-A frame on the wire is:
+## Format
 
-```
-[4-byte big-endian length][1-byte compression type][compressed Bedrock batch]
-```
+Packet frames have the following format:
 
-There is no `0xFE` game-packet byte. The compression byte uses the vanilla Bedrock values plus `-2` (`254`) for
-Zstd, which ProxyTransport adds.
+- frameLength: int
+- buffer: ByteBuf (the packets are formatted in the MCPE batch packet format with compression type byte in front of it)
 
-This library provides the codecs, the per-connection pipeline and the listeners. It is consumed as a **git
-submodule** by each host integration:
+## Compression
 
-- `ProxyTransport-Geyser` - Geyser extension
+ProxyTransport leverages different compression algorithms to improve bandwidth usage and CPU Usage.
+Three compression algorithms are supported: Zlib, Snappy, and Zstd.
 
-The single seam is `PeerFactory`: each host supplies its own `BedrockPeer` (hosts have differing peer base
-classes), and applies the shared behaviour via `ProxyTransportPeerSupport`.
+The compression byte has been extended with type `254` to support ZSTD as compression algorithm.
+
+#### General rule
+Packets are bi-directional. A packet can be sent from the client (or proxy) to the downstream server (Serverbound) or from the downstream server to the client (Clientbound).
+
+Since the 1.19.30 update, the client can use both the Zlib and the Snappy compression, the proxy can dictate which one to use.
+For clients < 1.19.30, zlib is the only option.
+
+The following rules apply:
+
+- Serverbound:
+    - **Unrewritten** packet batches are unchanged. They use the compression that the proxy dictated to the client and may be recompressed if the compressions differ.
+    - **Rewritten** packet batches are re-compressed using Zstd.
+- Clientbound:
+    - Packets have to be sent in the compression of the client from the downstream server, otherwise every packet batch will have to be recompressed.
+      That is possible, however not desired since it will cause notable overhead.
+
+The proxy receives and matches the NetworkSettingsPacket from the Downstream server to decide whether recompression is necessary.
+
+For every session two values are maintained: the clientNativeCompressionAlgo and the serverNativeCompressionAlgo.
+
+The clientNative algorithm is the algorithm that the client uses to send packets to the server. The server native algorithm is what the server uses to send to the client.
