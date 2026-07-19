@@ -58,6 +58,14 @@ public final class TcpProxyTransportServer {
         return result;
     }
 
+    /**
+     * The address the listener is actually bound to, resolved from the channel so an ephemeral port (0)
+     * reports what the OS assigned. Null until the bind completes.
+     */
+    public InetSocketAddress getBoundAddress() {
+        return this.channel == null ? null : (InetSocketAddress) this.channel.localAddress();
+    }
+
     public void shutdown() {
         if (this.channel != null) {
             this.channel.close().syncUninterruptibly();
