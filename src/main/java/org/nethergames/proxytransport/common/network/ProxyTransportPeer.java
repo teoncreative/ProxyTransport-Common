@@ -5,7 +5,7 @@
 
 package org.nethergames.proxytransport.common.network;
 
-import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 
 /** 
  * Transport-driven callbacks a host's peer exposes. Implemented by host peers, fed by the transports. 
@@ -16,7 +16,7 @@ public interface ProxyTransportPeer {
 
     /**
      * Seeds the peer with the underlying connection's remote address. A QUIC stream's own address is a stream
-     * address and the connection's is a connection id, neither of which is an {@link InetSocketAddress}.
+     * address and the connection's is a connection id, neither of which is a usable remote address.
      */
-    void setProxiedAddress(InetSocketAddress address);
+    void setProxiedAddress(SocketAddress address);
 }
