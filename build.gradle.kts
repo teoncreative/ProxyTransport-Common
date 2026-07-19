@@ -1,5 +1,6 @@
 plugins {
     `java-library`
+    `maven-publish`
 }
 
 group = "org.nethergames.proxytransport"
@@ -32,4 +33,30 @@ dependencies {
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
+    withSourcesJar()
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            artifactId = "proxytransport-common"
+            from(components["java"])
+        }
+    }
+    repositories {
+        maven {
+            name = "teoncreative"
+            url = uri(
+                if (version.toString().endsWith("SNAPSHOT")) {
+                    "https://repo.teon.llc/repository/maven-snapshots/"
+                } else {
+                    "https://repo.teon.llc/repository/maven-releases/"
+                }
+            )
+            credentials {
+                username = System.getenv("REPO_USERNAME") ?: providers.gradleProperty("teonUsername").orNull
+                password = System.getenv("REPO_PASSWORD") ?: providers.gradleProperty("teonPassword").orNull
+            }
+        }
+    }
 }
