@@ -6,7 +6,11 @@
 package org.nethergames.proxytransport.common.network;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
+import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.handler.timeout.IdleStateHandler;
 import org.cloudburstmc.protocol.bedrock.BedrockPeer;
 import org.cloudburstmc.protocol.bedrock.PacketDirection;
 import org.cloudburstmc.protocol.bedrock.netty.codec.batch.BedrockBatchDecoder;
@@ -29,6 +33,13 @@ import org.nethergames.proxytransport.common.codec.ProxyTransportFraming;
  */
 public class TransportChannelInitializer extends ChannelInitializer<Channel> {
 
+    /**
+     * A connection carries a single player, whose client sends input every tick, so silence this long means the
+     * connection is gone without the proxy having closed it, a TCP peer that vanished, or a QUIC stream leaked
+     * on a connection other players keep alive. Without this the host would hold the session forever.
+     */
+    private static final int READ_IDLE_SECONDS = 30;
+
     private final PeerFactory peerFactory;
 
     public TransportChannelInitializer(PeerFactory peerFactory) {
@@ -42,6 +53,17 @@ public class TransportChannelInitializer extends ChannelInitializer<Channel> {
         ProxyTransportFraming.addFraming(channel.pipeline());
 
         channel.pipeline()
+            .addLast(new IdleStateHandler(READ_IDLE_SECONDS, 0, 0))
+            .addLast(new ChannelInboundHandlerAdapter() {
+                @Override
+                public void userEventTriggered(ChannelHandlerContext ctx, Object event) {
+                    if (event instanceof IdleStateEvent) {
+                        ctx.close();
+                        return;
+                    }
+                    ctx.fireUserEventTriggered(event);
+                }
+            })
             .addLast(ProxyTransportFrameCodec.NAME, new ProxyTransportFrameCodec())
             // Encodes unprefixed until NetworkSettings; decode always reads the byte. The host swaps in the
             // negotiated codec via ProxyTransportPeerSupport#installCompression.
