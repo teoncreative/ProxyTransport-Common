@@ -33,6 +33,15 @@ public final class QuicProxyTransportServer {
 
     private static final String ALPN = "ng";
 
+    /**
+     * Flow control windows. Each side advertises what it is willing to receive, so these bound what
+     * the proxy may send to us, and the proxy's own settings bound what we send to it. The two are
+     * independent directions, not a negotiated minimum, so raising only one end leaves the other
+     * direction on its old limit.
+     * <p>
+     * One connection carries every session bound for this server, one stream each, so the
+     * connection window is shared across all of them.
+     */
     private static final int MAX_STREAM_DATA = 2 * 1024 * 1024;
     private static final int MAX_CONNECTION_DATA = 64 * 1024 * 1024;
     private static final int MAX_STREAMS = 256;
