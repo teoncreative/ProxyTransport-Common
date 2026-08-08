@@ -33,6 +33,10 @@ public final class QuicProxyTransportServer {
 
     private static final String ALPN = "ng";
 
+    private static final int MAX_STREAM_DATA = 2 * 1024 * 1024;
+    private static final int MAX_CONNECTION_DATA = 64 * 1024 * 1024;
+    private static final int MAX_STREAMS = 256;
+
     private final TransportLogger logger;
 
     private EventLoopGroup group;
@@ -69,11 +73,11 @@ public final class QuicProxyTransportServer {
         ChannelHandler codec = new QuicServerCodecBuilder()
             .sslContext(sslContext)
             .maxIdleTimeout(30, TimeUnit.SECONDS)
-            .initialMaxData(10_000_000)
-            .initialMaxStreamDataBidirectionalLocal(1_000_000)
-            .initialMaxStreamDataBidirectionalRemote(1_000_000)
-            .initialMaxStreamsBidirectional(256)
-            .initialMaxStreamsUnidirectional(256)
+            .initialMaxData(MAX_CONNECTION_DATA)
+            .initialMaxStreamDataBidirectionalLocal(MAX_STREAM_DATA)
+            .initialMaxStreamDataBidirectionalRemote(MAX_STREAM_DATA)
+            .initialMaxStreamsBidirectional(MAX_STREAMS)
+            .initialMaxStreamsUnidirectional(MAX_STREAMS)
             .tokenHandler(InsecureQuicTokenHandler.INSTANCE)
             // The connection-level handler must be @Sharable; sessions are created per stream instead.
             .handler(new ChannelInitializer<Channel>() {
