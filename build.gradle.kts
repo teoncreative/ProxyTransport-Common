@@ -14,7 +14,7 @@ repositories {
 }
 
 val nettyVersion = "4.2.7.Final"
-val protocolVersion = "3.0.0.Beta12-SNAPSHOT"
+val protocolVersion = "3.0.0.Beta14-SNAPSHOT"
 
 // Everything is compileOnly: this library declares what it compiles against and bundles nothing. Each plugin
 // decides what to shade into its own jar.
